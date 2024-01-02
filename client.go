@@ -1,22 +1,27 @@
 package main
 
 import (
+	"context"
 	"fmt"
-	"net/rpc"
-	"rpc-demo/rpc-protocol"
+	"rpc-demo/hello"
+
+	"google.golang.org/grpc"
 )
+
 func main() {
-	client, err := rpc.Dial("tcp", "localhost:1234")
+	conn, err := grpc.Dial("localhost:8080", grpc.WithInsecure())
 	if err != nil {
 		fmt.Println("Dial error:", err)
 		return
 	}
-	args := &protocol.Args{7, 8}
-	var reply int
-	err = client.Call("Arith.Multiply", args, &reply)
+	defer conn.Close()
+
+	client := hello.NewGreeterClient(conn)
+	req := hello.HelloRequest{Name: "gRPC"}
+	reply, err := client.SayHello(context.Background(), &req)
 	if err != nil {
-		fmt.Println("Call error:", err)
+		fmt.Printf("failed to call sayhello: %v", err)
 		return
 	}
-	fmt.Printf("%d * %d = %d\n", args.A, args.B, reply)
+	fmt.Printf("reply from server: %s\n", reply.Message)
 }
